@@ -95,7 +95,7 @@ form button{
   transition: 0.3s ease;
 }
 form button:hover{
-  background: #4534fe;
+  background: #675AFE;
 }
 
 @media(max-width: 400px){
