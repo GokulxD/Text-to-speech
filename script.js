@@ -1,96 +1,57 @@
-let optionsButtons = document.querySelectorAll(".option-button");
-let advancedOptionButton = document.querySelectorAll(".adv-option-button");
-let fontName = document.getElementById("fontName");
-let fontSizeRef = document.getElementById("fontSize");
-let writingArea = document.getElementById("text-input");
-let linkButton = document.getElementById("createLink");
-let alignButtons = document.querySelectorAll(".align");
-let spacingButtons = document.querySelectorAll(".spacing");
-let formatButtons = document.querySelectorAll(".format");
-let scriptButtons = document.querySelectorAll(".script");
+const textarea = document.querySelector("textarea"),
+voiceList = document.querySelector("select"),
+speechBtn = document.querySelector("button");
 
-let fontList = [
-    "Arial",
-    "Verdana",
-    "Times New Roman",
-    "Garamond",
-    "Georgia",
-    "Courier New",
-    "Cursive",
-];
+let synth = speechSynthesis,
+isSpeaking = true;
 
-const intializer = () => {
-    highlighter(alignButtons, true);
-    highlighter(spacingButtons, true);
-    highlighter(formatButtons, false);
-    highlighter(scriptButtons, true);
+voices();
 
-    fontList.map((value) => {
-        let option = document.createElement("option");
-        option.value = value;
-        option.innerHTML = value;
-        fontName.appendChild(option);
-    });
-
-    for (let i = 1; i <= 7; i++) {
-        let option = document.createElement("option");
-        option.value = i;
-        option.innerHTML = i;
-        fontSizeRef.appendChild(option);
+function voices(){
+    for(let voice of synth.getVoices()){
+        let selected = voice.name === "Google US English" ? "selected" : "";
+        let option = `<option value="${voice.name}" ${selected}>${voice.name} (${voice.lang})</option>`;
+        voiceList.insertAdjacentHTML("beforeend", option);
     }
+}
 
-    fontSizeRef.value = 3;
-};
+synth.addEventListener("voiceschanged", voices);
 
-const modifyText = (command, defaultUi, value) => {
-    document.execCommand(command, defaultUi, value);
-};
-
-optionsButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        modifyText(button.id, false, null);
-    });
-});
-
-advancedOptionButton.forEach((button) => {
-    button.addEventListener("change", () => {
-        modifyText(button.id, false, button.value);
-    });
-});
-
-linkButton.addEventListener("click", () => {
-    let userLink = prompt("Enter a URL?");
-    if (/http/i.test(userLink)) {
-        modifyText(linkButton.id, false, userLink);
-    } else {
-        userLink = "http://" + userLink;
-        modifyText(linkButton.id, false, userLink);
+function textToSpeech(text){
+    let utterance = new SpeechSynthesisUtterance(text);
+    for(let voice of synth.getVoices()){
+        if(voice.name === voiceList.value){
+            utterance.voice = voice;
+        }
     }
-});
+    synth.speak(utterance);
+}
 
-const highlighter = (className, needsRemoval) => {
-    className.forEach((button) => {
-        button.addEventListener("click", () => {
-            if (needsRemoval) {
-                let alreadyActive = false;
-                if (button.classList.contains("active")) {
-                    alreadyActive = true;
+speechBtn.addEventListener("click", e =>{
+    e.preventDefault();
+    if(textarea.value !== ""){
+        if(!synth.speaking){
+            textToSpeech(textarea.value);
+        }
+        if(textarea.value.length > 80){
+            setInterval(()=>{
+                if(!synth.speaking && !isSpeaking){
+                    isSpeaking = true;
+                    speechBtn.innerText = "Convert To Speech";
+                }else{
                 }
-                highlighterRemover(className);
-                if (!alreadyActive) {
-                    button.classList.add("active");
-                }
-            } else {
-                button.classList.toggle("active");
+            }, 500);
+            if(isSpeaking){
+                synth.resume();
+                isSpeaking = false;
+                speechBtn.innerText = "Pause Speech";
+            }else{
+                synth.pause();
+                isSpeaking = true;
+                speechBtn.innerText = "Resume Speech";
             }
-        });
-    });
-};
-
-const highlighterRemover = (className) => {
-    className.forEach((button) => {
-        button.classList.remove("active");
-    });
-};
-
-window.onload = intializer();
+        }else{
+            speechBtn.innerText = "Convert To Speech";
+        }
+    }
+});
